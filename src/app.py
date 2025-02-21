@@ -20,7 +20,7 @@ limiter = init_limiter(app)
 token_system = TokenSystem()
 
 @app.route('/login', methods=['POST'])
-@limiter.limit("3 per minute")  # Límite estricto para intentos de login
+@limiter.limit("20 per minute")  # Aumentado a 20 peticiones por minuto
 def login():
     data = request.get_json()
     print("Datos recibidos:", data)  # Log para depuración
@@ -44,7 +44,7 @@ def login():
 
 @app.route('/tokens', methods=['POST'])
 @token_required
-@limiter.limit("10 per minute")
+@limiter.limit("20 per minute")  # Aumentado a 20 peticiones por minuto
 def add_token():
     data = request.get_json()
     errors = validate_token_input(data)
@@ -62,7 +62,7 @@ def add_token():
 
 @app.route('/tokens/relationship', methods=['POST'])
 @token_required
-@limiter.limit("10 per minute")
+@limiter.limit("20 per minute")  # Aumentado a 20 peticiones por minuto
 def add_relationship():
     data = request.get_json()
     errors = validate_relationship_input(data)
@@ -81,7 +81,7 @@ def add_relationship():
 
 @app.route('/tokens/search', methods=['GET'])
 @token_required
-@limiter.limit("30 per minute")
+@limiter.limit("20 per minute")  # Aumentado a 20 peticiones por minuto
 def search_tokens():
     query = request.args.get('q')
     n_results = int(request.args.get('n', 5))
@@ -131,8 +131,10 @@ def favicon():
 
 @app.errorhandler(429)
 def ratelimit_handler(e):
-    log_action('rate_limit_exceeded', details={'endpoint': request.path})
-    return jsonify({'error': 'Rate limit exceeded'}), 429
+    return jsonify({
+        'error': 'Has excedido el límite de peticiones (20 por minuto). Por favor, espera un momento antes de intentarlo de nuevo.',
+        'retry_after': e.description
+    }), 429
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
