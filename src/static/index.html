@@ -6,13 +6,21 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <title>Sistema de Tokens</title>
     <style>
+        :root {
+            --primary-color: #4CAF50;
+            --error-color: #f44336;
+            --success-color: #4CAF50;
+            --warning-color: #ff9800;
+        }
+
         body {
             font-family: Arial, sans-serif;
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
             background-color: #f5f5f5;
         }
+
         .container {
             background-color: white;
             padding: 20px;
@@ -20,36 +28,99 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-bottom: 20px;
         }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
+        }
+
+        .col-12 { grid-column: span 12; }
+        .col-6 { grid-column: span 6; }
+        .col-4 { grid-column: span 4; }
+
+        nav {
+            background-color: #333;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+        }
+
+        nav .user-info {
+            color: white;
+            float: right;
+        }
+
         h2 {
             color: #333;
             margin-top: 0;
         }
+
         .form-group {
             margin-bottom: 15px;
         }
+
         label {
             display: block;
             margin-bottom: 5px;
             color: #666;
         }
-        input[type="text"], textarea {
+
+        input[type="text"],
+        input[type="password"],
+        textarea {
             width: 100%;
             padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
             box-sizing: border-box;
         }
+
         button {
-            background-color: #4CAF50;
+            background-color: var(--primary-color);
             color: white;
             padding: 10px 15px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            transition: background-color 0.3s;
         }
+
         button:hover {
             background-color: #45a049;
         }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .alert {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .alert-error {
+            background-color: var(--error-color);
+            color: white;
+        }
+
+        .alert-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        #loginContainer {
+            max-width: 400px;
+            margin: 100px auto;
+        }
+
+        #mainContent {
+            display: none;
+        }
+
         #results {
             margin-top: 20px;
             padding: 10px;
@@ -57,146 +128,290 @@
             border-radius: 4px;
             background-color: #fff;
         }
+
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading::after {
+            content: '';
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Añadir Token</h2>
-        <div class="form-group">
-            <label for="token">Token:</label>
-            <input type="text" id="token" name="token">
-        </div>
-        <div class="form-group">
-            <label for="category">Categoría:</label>
-            <input type="text" id="category" name="category" value="custom">
-        </div>
-        <div class="form-group">
-            <label for="metadata">Metadatos (JSON):</label>
-            <textarea id="metadata" name="metadata" rows="3">{}</textarea>
-        </div>
-        <button onclick="addToken()">Añadir Token</button>
+    <div class="loading" id="loading"></div>
+
+    <div id="loginContainer" class="container">
+        <h2>Iniciar Sesión</h2>
+        <div class="alert alert-error" id="loginError"></div>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Usuario:</label>
+                <input type="text" id="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Contraseña:</label>
+                <input type="password" id="password" required>
+            </div>
+            <button type="submit">Iniciar Sesión</button>
+        </form>
     </div>
 
-    <div class="container">
-        <h2>Añadir Relación</h2>
-        <div class="form-group">
-            <label for="token1">Token 1:</label>
-            <input type="text" id="token1" name="token1">
-        </div>
-        <div class="form-group">
-            <label for="token2">Token 2:</label>
-            <input type="text" id="token2" name="token2">
-        </div>
-        <div class="form-group">
-            <label for="relationship">Tipo de Relación:</label>
-            <input type="text" id="relationship" name="relationship">
-        </div>
-        <button onclick="addRelationship()">Añadir Relación</button>
-    </div>
+    <div id="mainContent">
+        <nav>
+            <span class="user-info">
+                Usuario: <span id="currentUser"></span>
+                <button onclick="logout()" style="margin-left: 10px">Cerrar Sesión</button>
+            </span>
+        </nav>
 
-    <div class="container">
-        <h2>Buscar Tokens</h2>
-        <div class="form-group">
-            <label for="search">Búsqueda:</label>
-            <input type="text" id="search" name="search">
-        </div>
-        <div class="form-group">
-            <label for="n_results">Número de resultados:</label>
-            <input type="number" id="n_results" name="n_results" value="5">
-        </div>
-        <button onclick="searchTokens()">Buscar</button>
-    </div>
+        <div class="grid">
+            <div class="container col-6">
+                <h2>Añadir Token</h2>
+                <div class="alert alert-error" id="tokenError"></div>
+                <div class="alert alert-success" id="tokenSuccess"></div>
+                <div class="form-group">
+                    <label for="token">Token:</label>
+                    <input type="text" id="token" name="token">
+                </div>
+                <div class="form-group">
+                    <label for="category">Categoría:</label>
+                    <input type="text" id="category" name="category" value="custom">
+                </div>
+                <div class="form-group">
+                    <label for="metadata">Metadatos (JSON):</label>
+                    <textarea id="metadata" name="metadata" rows="3">{}</textarea>
+                </div>
+                <button onclick="addToken()">Añadir Token</button>
+            </div>
 
-    <div class="container">
-        <h2>Tokenizar Texto</h2>
-        <div class="form-group">
-            <label for="text">Texto:</label>
-            <textarea id="text" name="text" rows="3"></textarea>
-        </div>
-        <button onclick="tokenizeText()">Tokenizar</button>
-    </div>
+            <div class="container col-6">
+                <h2>Añadir Relación</h2>
+                <div class="alert alert-error" id="relationError"></div>
+                <div class="alert alert-success" id="relationSuccess"></div>
+                <div class="form-group">
+                    <label for="token1">Token 1:</label>
+                    <input type="text" id="token1" name="token1">
+                </div>
+                <div class="form-group">
+                    <label for="token2">Token 2:</label>
+                    <input type="text" id="token2" name="token2">
+                </div>
+                <div class="form-group">
+                    <label for="relationship">Tipo de Relación:</label>
+                    <input type="text" id="relationship" name="relationship">
+                </div>
+                <button onclick="addRelationship()">Añadir Relación</button>
+            </div>
 
-    <div id="results" class="container">
-        <h2>Resultados</h2>
-        <pre id="result-content"></pre>
+            <div class="container col-12">
+                <h2>Buscar Tokens</h2>
+                <div class="alert alert-error" id="searchError"></div>
+                <div class="form-group">
+                    <label for="search">Búsqueda:</label>
+                    <input type="text" id="search" name="search">
+                </div>
+                <button onclick="searchTokens()">Buscar</button>
+                <div id="results"></div>
+            </div>
+        </div>
     </div>
 
     <script>
-        async function addToken() {
-            const token = document.getElementById('token').value;
-            const category = document.getElementById('category').value;
-            let metadata = {};
-            try {
-                metadata = JSON.parse(document.getElementById('metadata').value);
-            } catch (e) {
-                alert('Error en el formato JSON de los metadatos');
-                return;
+        // Variables globales
+        let token = localStorage.getItem('token');
+        let username = localStorage.getItem('username');
+
+        // Funciones de utilidad
+        function showLoading() {
+            document.getElementById('loading').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function showError(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.style.display = 'block';
+            setTimeout(() => element.style.display = 'none', 5000);
+        }
+
+        function showSuccess(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.style.display = 'block';
+            setTimeout(() => element.style.display = 'none', 5000);
+        }
+
+        async function fetchWithAuth(url, options = {}) {
+            if (!token) {
+                throw new Error('No autenticado');
             }
 
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                ...options.headers
+            };
+
             try {
-                const response = await fetch('/tokens', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ token, category, metadata })
-                });
-                const data = await response.json();
-                document.getElementById('result-content').textContent = JSON.stringify(data, null, 2);
+                const response = await fetch(url, { ...options, headers });
+                
+                if (response.status === 401) {
+                    logout();
+                    throw new Error('Sesión expirada');
+                }
+                
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+                
+                return response;
             } catch (error) {
-                console.error('Error:', error);
+                console.error('Error en la petición:', error);
+                throw error;
+            }
+        }
+
+        // Funciones de autenticación
+        async function login(event) {
+            event.preventDefault();
+            showLoading();
+
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: document.getElementById('username').value,
+                        password: document.getElementById('password').value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Error de autenticación');
+                }
+
+                token = data.token;
+                username = document.getElementById('username').value;
+                localStorage.setItem('token', token);
+                localStorage.setItem('username', username);
+                
+                document.getElementById('currentUser').textContent = username;
+                document.getElementById('loginContainer').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+            } catch (error) {
+                showError('loginError', error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function logout() {
+            token = null;
+            username = null;
+            localStorage.removeItem('token');
+            localStorage.removeItem('username');
+            document.getElementById('loginContainer').style.display = 'block';
+            document.getElementById('mainContent').style.display = 'none';
+        }
+
+        // Funciones de la API
+        async function addToken() {
+            showLoading();
+            try {
+                const metadata = JSON.parse(document.getElementById('metadata').value);
+                const response = await fetchWithAuth('/tokens', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        token: document.getElementById('token').value,
+                        category: document.getElementById('category').value,
+                        metadata: metadata
+                    })
+                });
+
+                const data = await response.json();
+                showSuccess('tokenSuccess', data.message);
+            } catch (error) {
+                showError('tokenError', error.message);
+            } finally {
+                hideLoading();
             }
         }
 
         async function addRelationship() {
-            const token1 = document.getElementById('token1').value;
-            const token2 = document.getElementById('token2').value;
-            const type = document.getElementById('relationship').value;
-
+            showLoading();
             try {
-                const response = await fetch('/tokens/relationship', {
+                const response = await fetchWithAuth('/tokens/relationship', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ token1, token2, type })
+                    body: JSON.stringify({
+                        token1: document.getElementById('token1').value,
+                        token2: document.getElementById('token2').value,
+                        type: document.getElementById('relationship').value
+                    })
                 });
+
                 const data = await response.json();
-                document.getElementById('result-content').textContent = JSON.stringify(data, null, 2);
+                showSuccess('relationSuccess', data.message);
             } catch (error) {
-                console.error('Error:', error);
+                showError('relationError', error.message);
+            } finally {
+                hideLoading();
             }
         }
 
         async function searchTokens() {
-            const query = document.getElementById('search').value;
-            const n = document.getElementById('n_results').value;
-
+            showLoading();
             try {
-                const response = await fetch(`/tokens/search?q=${encodeURIComponent(query)}&n=${n}`);
+                const query = document.getElementById('search').value;
+                const response = await fetchWithAuth(`/tokens/search?q=${encodeURIComponent(query)}`);
                 const data = await response.json();
-                document.getElementById('result-content').textContent = JSON.stringify(data, null, 2);
+                
+                document.getElementById('results').innerHTML = `
+                    <h3>Resultados:</h3>
+                    <ul>
+                        ${data.tokens.map(token => `<li>${token}</li>`).join('')}
+                    </ul>
+                `;
             } catch (error) {
-                console.error('Error:', error);
+                showError('searchError', error.message);
+            } finally {
+                hideLoading();
             }
         }
 
-        async function tokenizeText() {
-            const text = document.getElementById('text').value;
+        // Inicialización
+        document.getElementById('loginForm').addEventListener('submit', login);
 
-            try {
-                const response = await fetch('/tokenize', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ text })
-                });
-                const data = await response.json();
-                document.getElementById('result-content').textContent = JSON.stringify(data, null, 2);
-            } catch (error) {
-                console.error('Error:', error);
-            }
+        // Verificar si hay una sesión activa
+        if (token && username) {
+            document.getElementById('currentUser').textContent = username;
+            document.getElementById('loginContainer').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
         }
     </script>
 </body>
