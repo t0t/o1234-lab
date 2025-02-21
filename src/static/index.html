@@ -407,9 +407,9 @@
         // Inicialización
         document.getElementById('loginForm').addEventListener('submit', login);
 
-        // Variables globales para la sesión
-        let token = localStorage.getItem('token');
-        let username = localStorage.getItem('username');
+        // Recuperar sesión del localStorage
+        token = localStorage.getItem('token');
+        username = localStorage.getItem('username');
 
         // Verificar si hay una sesión activa
         if (token && username) {
