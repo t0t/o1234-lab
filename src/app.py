@@ -3,7 +3,10 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from token_system import TokenSystem
 
-app = Flask(__name__, static_folder='static', static_url_path='')
+# Obtener la ruta absoluta al directorio static
+static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
+
+app = Flask(__name__)
 CORS(app)
 token_system = TokenSystem()
 
@@ -64,7 +67,11 @@ def tokenize_text():
 
 @app.route('/')
 def index():
-    return send_from_directory('static', 'index.html')
+    return send_from_directory(static_dir, 'index.html')
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(static_dir, 'favicon.ico')
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
