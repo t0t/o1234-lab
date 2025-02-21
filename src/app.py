@@ -2,7 +2,7 @@ import os
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from token_system import TokenSystem
-from auth import token_required, authenticate_user, generate_token
+from auth import token_required, authenticate_user, generate_token, ADMIN_USERNAME, ADMIN_PASSWORD
 from middleware import init_limiter, validate_token_input, validate_relationship_input
 from logger import log_action
 from config import CORS_ALLOWED_ORIGINS
@@ -23,8 +23,12 @@ token_system = TokenSystem()
 @limiter.limit("3 per minute")  # Límite estricto para intentos de login
 def login():
     data = request.get_json()
+    print("Datos recibidos:", data)  # Log para depuración
     username = data.get('username')
     password = data.get('password')
+    
+    print(f"Username: {username}, Password: {password}")  # Log para depuración
+    print(f"Expected: {ADMIN_USERNAME}, {ADMIN_PASSWORD}")  # Log para depuración
     
     if not username or not password:
         log_action('login_error', details={'error': 'Missing credentials'})

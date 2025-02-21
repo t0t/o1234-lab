@@ -50,7 +50,5 @@ def authenticate_user(username, password):
     """Autentica un usuario."""
     if username != ADMIN_USERNAME:
         return False
-        
-    # En producción, deberías tener los hashes almacenados en una base de datos
-    stored_hash = hash_password(ADMIN_PASSWORD)
-    return verify_password(password, stored_hash)
+    
+    return password == ADMIN_PASSWORD
