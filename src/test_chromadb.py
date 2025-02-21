@@ -1,4 +1,8 @@
 import chromadb
+import numpy as np
+
+# Ensure we're using numpy 2.0 compatible types
+np.float_ = np.float64  # Fix for numpy 2.0 compatibility
 
 def test_chromadb_connection():
     # Create a client
