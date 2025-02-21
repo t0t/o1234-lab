@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Tokens</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h2 {
+            color: #333;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #results {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Añadir Token</h2>
+        <div class="form-group">
+            <label for="token">Token:</label>
+            <input type="text" id="token" name="token">
+        </div>
+        <div class="form-group">
+            <label for="category">Categoría:</label>
+            <input type="text" id="category" name="category" value="custom">
+        </div>
+        <div class="form-group">
+            <label for="metadata">Metadatos (JSON):</label>
+            <textarea id="metadata" name="metadata" rows="3">{}</textarea>
+        </div>
+        <button onclick="addToken()">Añadir Token</button>
+    </div>
+
+    <div class="container">
+        <h2>Añadir Relación</h2>
+        <div class="form-group">
+            <label for="token1">Token 1:</label>
+            <input type="text" id="token1" name="token1">
+        </div>
+        <div class="form-group">
+            <label for="token2">Token 2:</label>
+            <input type="text" id="token2" name="token2">
+        </div>
+        <div class="form-group">
+            <label for="relationship">Tipo de Relación:</label>
+            <input type="text" id="relationship" name="relationship">
+        </div>
+        <button onclick="addRelationship()">Añadir Relación</button>
+    </div>
+
+    <div class="container">
+        <h2>Buscar Tokens</h2>
+        <div class="form-group">
+            <label for="search">Búsqueda:</label>
+            <input type="text" id="search" name="search">
+        </div>
+        <div class="form-group">
+            <label for="n_results">Número de resultados:</label>
+            <input type="number" id="n_results" name="n_results" value="5">
+        </div>
+        <button onclick="searchTokens()">Buscar</button>
+    </div>
+
+    <div class="container">
+        <h2>Tokenizar Texto</h2>
+        <div class="form-group">
+            <label for="text">Texto:</label>
+            <textarea id="text" name="text" rows="3"></textarea>
+        </div>
+        <button onclick="tokenizeText()">Tokenizar</button>
+    </div>
+
+    <div id="results" class="container">
+        <h2>Resultados</h2>
+        <pre id="result-content"></pre>
+    </div>
+
+    <script>
+        async function addToken() {
+            const token = document.getElementById('token').value;
+            const category = document.getElementById('category').value;
+            let metadata = {};
+            try {
+                metadata = JSON.parse(document.getElementById('metadata').value);
+            } catch (e) {
+                alert('Error en el formato JSON de los metadatos');
+                return;
+            }
+
+            try {
+                const response = await fetch('/tokens', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ token, category, metadata })
+                });
+                const data = await response.json();
+                document.getElementById('result-content').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function addRelationship() {
+            const token1 = document.getElementById('token1').value;
+            const token2 = document.getElementById('token2').value;
+            const type = document.getElementById('relationship').value;
+
+            try {
+                const response = await fetch('/tokens/relationship', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ token1, token2, type })
+                });
+                const data = await response.json();
+                document.getElementById('result-content').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function searchTokens() {
+            const query = document.getElementById('search').value;
+            const n = document.getElementById('n_results').value;
+
+            try {
+                const response = await fetch(`/tokens/search?q=${encodeURIComponent(query)}&n=${n}`);
+                const data = await response.json();
+                document.getElementById('result-content').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function tokenizeText() {
+            const text = document.getElementById('text').value;
+
+            try {
+                const response = await fetch('/tokenize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text })
+                });
+                const data = await response.json();
+                document.getElementById('result-content').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
